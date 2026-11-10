@@ -375,9 +375,14 @@ function ensureScan(force = false) {
       }
       const summary = summarize(files)
       await saveCache({ schemaVersion: CACHE_SCHEMA_VERSION, files })
-      const final = { scanned: paths.length, total: paths.length }
       scanState.progress = null
-      postToPanels('usage.progress', final)
+      // The completion post is sent only when a scan actually ran with progress
+      // shown. Cached instant passes used to post a final "done" on every
+      // usage.summary call, and the panel's on-complete reload looped forever:
+      // summary → post(done) → reload → summary → … (bars flickered).
+      if (progressShown) {
+        postToPanels('usage.progress', { scanned: paths.length, total: paths.length })
+      }
       return summary
     })().finally(() => {
       scanInFlight = null

@@ -126,6 +126,7 @@
         margin-top: 2px;
         font-variant-numeric: tabular-nums;
       }
+      .k-hint { color: var(--orca-primary, #60a5fa); font-size: 10px; }
       .stat.stat-click {
         cursor: pointer;
         transition: border-color 120ms;
@@ -517,7 +518,7 @@
 
     <div class="stats" id="stats">
       <div class="stat stat-click" id="today-card" role="button" tabindex="0" aria-expanded="false" title="Show today's breakdown">
-        <div class="k">Today</div><div class="v" id="today-tokens">—</div><div class="d" id="today-sub"></div>
+        <div class="k">Today <span class="k-hint">▾</span></div><div class="v" id="today-tokens">—</div><div class="d" id="today-sub"></div>
       </div>
       <div class="stat"><div class="k">Window tokens</div><div class="v" id="win-tokens">—</div><div class="d" id="win-tokens-sub"></div></div>
       <div class="stat"><div class="k">Window cost</div><div class="v" id="win-cost">—</div><div class="d" id="win-cost-sub"></div></div>
@@ -674,7 +675,7 @@
           tipRow('output', d.outputTokens) +
           tipRow('cache read', d.cacheReadTokens) +
           tipRow('reasoning', d.reasoningTokens) +
-          '<div class="tip-row tip-total"><span>total</span><b>' +
+          '<div class="tip-row tip-total"><span>total (excl. reasoning)</span><b>' +
           d.totalTokens.toLocaleString() + ' · ' + money(d.costUsd) + '</b></div>'
         )
       }
@@ -749,6 +750,11 @@
             if (seriesOn.cache) seg('seg-cache', d.cacheReadTokens)
             if (seriesOn.reasoning) seg('seg-reasoning', d.reasoningTokens)
             bindTip(bar, function () { return tipHtml(d) }, function () { return d.day })
+            bar.addEventListener('click', function () {
+              dayDetailDay = d.day
+              if (summaryCache) renderDayDetail(summaryCache)
+              document.getElementById('day-detail').scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+            })
           } else {
             bar.setAttribute('aria-label', labelFor(d.day) + ': no usage')
           }
@@ -992,11 +998,18 @@
 
       // worker pushes scan progress while a rescan runs
       var lastProgressAt = 0
+      var scanWasShown = false
       if (orca.plugin && orca.plugin.on) {
         orca.plugin.on('usage.progress', function (p) {
           lastProgressAt = Date.now()
+          var badge = document.getElementById('live-badge')
+          if (!badge.hidden) scanWasShown = true
           showScanProgress(p)
-          if (p && p.scanned >= p.total) {
+          // Reload on completion only when this panel actually showed a scan;
+          // a stray "done" post with no scan running must not trigger a reload
+          // (that looped summary → post → reload → summary and flickered the chart).
+          if (scanWasShown && p && p.scanned >= p.total) {
+            scanWasShown = false
             load()
           }
         })

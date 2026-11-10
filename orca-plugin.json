@@ -4,11 +4,15 @@
   "execution": "trusted-worker",
   "id": "omp-usage",
   "name": "OMP Usage",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Token-usage dashboard for the local omp corpus: stacked daily chart with series toggles, per-model table, corpus totals, and a status-bar item with today's spend.",
-  "author": { "name": "spgsroot" },
+  "author": {
+    "name": "spgsroot"
+  },
   "license": "MIT",
-  "engines": { "orca": ">=1.4.255" },
+  "engines": {
+    "orca": ">=1.4.255"
+  },
   "pluginApi": 1,
   "main": "main.mjs",
   "contributes": {
@@ -30,7 +34,7 @@
     "statusBarItems": [
       {
         "id": "omp-tokens",
-        "text": "…",
+        "text": "\u2026",
         "icon": "bar-chart-3",
         "tone": "neutral",
         "tooltip": "OMP tokens today (local corpus)"
@@ -38,7 +42,11 @@
     ]
   },
   "capabilities": [
-    { "kind": "storage:own" },
-    { "kind": "notifications:show" }
+    {
+      "kind": "storage:own"
+    },
+    {
+      "kind": "notifications:show"
+    }
   ]
 }
