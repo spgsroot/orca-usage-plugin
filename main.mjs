@@ -21,7 +21,7 @@ const CACHE_PATH = join(
   'omp-usage',
   'usage-cache.json'
 )
-const CACHE_SCHEMA_VERSION = 1
+const CACHE_SCHEMA_VERSION = 2
 const RESCAN_INTERVAL_MS = 15 * 60_000
 
 // ---------------------------------------------------------------------------
@@ -64,7 +64,9 @@ function createAccumulator() {
     lastUsageModel: null,
     lastUsageProvider: null,
     totals: emptyTotals(),
-    dailyByDay: new Map()
+    dailyByDay: new Map(),
+    /** Exact per-model totals: every usage block is attributed to the model of its own message. */
+    byModel: new Map()
   }
 }
 
@@ -137,6 +139,25 @@ function applyLine(line, context, accumulator) {
     accumulator.lastUsageModel = context.currentModel ?? 'unknown'
     accumulator.lastUsageProvider = context.currentProvider ?? 'unknown'
   }
+
+  // Per-model attribution uses the message's own model, so a session that
+  // switches models keeps each model's cost exact.
+  const modelKey =
+    context.currentProvider !== null
+      ? `${context.currentProvider}/${context.currentModel ?? 'unknown'}`
+      : (context.currentModel ?? 'unknown')
+  let modelBucket = accumulator.byModel.get(modelKey)
+  if (!modelBucket) {
+    modelBucket = { model: modelKey, ...emptyTotals(), sessions: 0 }
+    accumulator.byModel.set(modelKey, modelBucket)
+  }
+  modelBucket.inputTokens += inputTokens
+  modelBucket.outputTokens += outputTokens
+  modelBucket.cacheReadTokens += cacheReadTokens
+  modelBucket.cacheWriteTokens += cacheWriteTokens
+  modelBucket.reasoningTokens += reasoningTokens
+  modelBucket.totalTokens += totalTokens
+  modelBucket.costUsd += cost
 
   let daily = accumulator.dailyByDay.get(day)
   if (!daily) {
@@ -229,7 +250,8 @@ async function scanFile(filePath, previous) {
     mtimeMs: info.mtimeMs,
     size: info.size,
     sessions: session ? [session] : [],
-    dailyAggregates: [...accumulator.dailyByDay.values()]
+    dailyAggregates: [...accumulator.dailyByDay.values()],
+    byModelBuckets: [...accumulator.byModel.values()]
   }
 }
 
@@ -248,16 +270,24 @@ function summarize(files) {
   const daily = [...byDay.values()].sort((a, b) => (a.day < b.day ? -1 : 1))
 
   const sessions = files.flatMap((f) => f.sessions)
+  // Per-model buckets are exact: every usage block is attributed to the model of
+  // its own message. A model's session count is how many sessions used it.
   const byModel = new Map()
-  for (const s of sessions) {
-    const key = s.provider !== 'unknown' ? `${s.provider}/${s.model}` : s.model
-    let entry = byModel.get(key)
-    if (!entry) {
-      byModel.set(key, { model: key, ...emptyTotals(), sessions: 0 })
+  for (const file of files) {
+    const counted = new Set()
+    for (const bucket of file.byModelBuckets ?? []) {
+      let entry = byModel.get(bucket.model)
+      if (!entry) {
+        entry = { ...bucket, sessions: 0 }
+        byModel.set(bucket.model, entry)
+      } else {
+        addTotals(entry, bucket)
+      }
+      if (!counted.has(bucket.model)) {
+        counted.add(bucket.model)
+        entry.sessions += 1
+      }
     }
-    entry = byModel.get(key)
-    addTotals(entry, s)
-    entry.sessions += 1
   }
 
   const totals = emptyTotals()

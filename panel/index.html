@@ -704,6 +704,18 @@
         var tbody = document.querySelector('#models tbody')
         var note = document.getElementById('model-note')
         tbody.replaceChildren()
+        if (models.length === 0 && sessionTotal === 0) {
+          var tr0 = document.createElement('tr')
+          var td0 = document.createElement('td')
+          td0.colSpan = 7
+          td0.innerHTML =
+            '<div class="empty">No omp session data found.<br>' +
+            'This dashboard reads <code>~/.omp/agent/sessions</code> from the omp CLI.<br>' +
+            'Run a few omp sessions, then press Refresh.</div>'
+          tr0.appendChild(td0)
+          tbody.appendChild(tr0)
+          return
+        }
         if (models.length === 0) {
           note.textContent = ''
           var emptyTr = document.createElement('tr')
@@ -734,7 +746,7 @@
             cell(tokenCount(m.cacheReadTokens + m.cacheWriteTokens))
             cell(tokenCount(m.reasoningTokens))
             cell(tokenCount(m.totalTokens), i === 0 ? 'cell-accent' : undefined)
-            cell(money(m.costUsd), i === 0 ? 'cell-accent' : undefined)
+            cell(m.costUsd > 0 ? money(m.costUsd) : '—', i === 0 ? 'cell-accent' : undefined)
             tbody.appendChild(tr)
           })
       }
