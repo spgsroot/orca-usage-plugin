@@ -4,7 +4,7 @@
   "execution": "trusted-worker",
   "id": "omp-usage",
   "name": "OMP Usage",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Token-usage dashboard for the local omp corpus: stacked daily chart with series toggles, per-model table, corpus totals, and a status-bar item with today's spend.",
   "author": { "name": "spgsroot" },
   "license": "MIT",

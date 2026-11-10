@@ -1,7 +1,7 @@
 {
   "name": "orca-omp-usage-plugin",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Token-usage dashboard for the local omp corpus — an Orca plugin. Package metadata for tooling; the plugin itself is plain ESM with node:* imports only.",
   "type": "module",
   "scripts": {
