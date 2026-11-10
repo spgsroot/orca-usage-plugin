@@ -1,0 +1,855 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>OMP Usage</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --gap: 14px;
+        --radius: 8px;
+        --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      body {
+        margin: 0;
+        padding: var(--gap);
+        font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+        color: var(--orca-foreground, #ddd);
+        background: var(--orca-background, transparent);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ---------- header ---------- */
+      .head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 2px;
+      }
+      h1 {
+        font-size: 14px;
+        font-weight: 650;
+        margin: 0;
+        letter-spacing: -0.01em;
+      }
+      .subtitle {
+        margin: 0 0 14px;
+        font-size: 11.5px;
+        line-height: 1.4;
+        color: var(--orca-muted-foreground, #999);
+      }
+
+      /* ---------- segmented control ---------- */
+      .seg {
+        display: inline-flex;
+        padding: 2px;
+        gap: 2px;
+        border: 1px solid var(--orca-border, #444);
+        border-radius: 9px;
+        background: var(--orca-secondary, #26262a);
+      }
+      .seg button {
+        border: none;
+        border-radius: 7px;
+        padding: 3px 11px;
+        font: inherit;
+        font-size: 11.5px;
+        font-weight: 550;
+        color: var(--orca-muted-foreground, #aaa);
+        background: transparent;
+        cursor: pointer;
+        transition: color 120ms, background 120ms;
+      }
+      .seg button:hover { color: var(--orca-foreground, #eee); }
+      .seg button[aria-pressed="true"] {
+        color: var(--orca-primary-foreground, #fff);
+        background: var(--orca-primary, #2563eb);
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .toolbar button {
+        padding: 4px 12px;
+        font: inherit;
+        font-size: 12px;
+        color: var(--orca-foreground, #eee);
+        background: var(--orca-secondary, #2a2a2e);
+        border: 1px solid var(--orca-border, #48484e);
+        border-radius: 7px;
+        cursor: pointer;
+      }
+      .toolbar button:hover { border-color: var(--orca-muted-foreground, #777); }
+      .toolbar button:focus-visible {
+        outline: 2px solid var(--orca-primary, #2563eb);
+        outline-offset: 1px;
+      }
+
+      /* ---------- stat strip: 2 cards narrow, 4 wide ---------- */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .stat {
+        padding: 9px 11px;
+        border: 1px solid var(--orca-border, #3d3d42);
+        border-radius: var(--radius);
+        background: var(--orca-card, rgba(128, 128, 128, 0.07));
+      }
+      .stat .k {
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--orca-muted-foreground, #999);
+        margin-bottom: 3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .stat .v {
+        font-size: 16px;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.01em;
+      }
+      .stat .d {
+        font-size: 11px;
+        color: var(--orca-muted-foreground, #999);
+        margin-top: 2px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ---------- sections ---------- */
+      h2 {
+        font-size: 11px;
+        font-weight: 650;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--orca-muted-foreground, #999);
+        margin: 0 0 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      h2 .note {
+        font-weight: 450;
+        text-transform: none;
+        letter-spacing: 0;
+        text-align: right;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      section { margin-bottom: 18px; }
+
+      /* ---------- chart ---------- */
+      .chart-box {
+        border: 1px solid var(--orca-border, #3d3d42);
+        border-radius: var(--radius);
+        background: var(--orca-card, rgba(128, 128, 128, 0.07));
+        padding: 10px 12px 8px;
+      }
+      .chart-grid {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 0 6px;
+      }
+      .y-axis {
+        display: grid;
+        grid-template-rows: repeat(4, 1fr);
+        font-size: 9.5px;
+        color: var(--orca-muted-foreground, #888);
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        align-items: center;
+        padding-right: 2px;
+      }
+      .chart {
+        position: relative;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        gap: 3px;
+        align-items: end;
+        height: 130px;
+      }
+      .chart .gridline {
+        position: absolute;
+        left: 0;
+        right: 0;
+        border-top: 1px dashed rgba(128, 128, 128, 0.22);
+        pointer-events: none;
+      }
+      .bar {
+        appearance: none;
+        -webkit-appearance: none;
+        border: none;
+        background: transparent;
+        padding: 0;
+        margin: 0;
+        font: inherit;
+        color: inherit;
+        display: flex;
+        flex-direction: column-reverse;
+        height: 100%;
+        min-width: 5px;
+        position: relative;
+        overflow: hidden;
+        cursor: default;
+        transition: filter 100ms;
+      }
+      .bar:hover { filter: brightness(1.25); }
+      .bar:focus-visible {
+        outline: 2px solid var(--orca-primary, #2563eb);
+        outline-offset: 1px;
+      }
+      .bar span { width: 100%; min-height: 1.5px; }
+      .seg-input { background: var(--orca-primary, #3b82f6); }
+      .seg-output { background: #22c55e; }
+      .seg-cache { background: #94a3b8; }
+      .seg-reasoning { background: #ef4444; }
+      .bar.empty-bar {
+        height: 3px;
+        border-radius: 0;
+        background: transparent;
+        border-top: 1px dashed rgba(128, 128, 128, 0.3);
+        overflow: visible;
+      }
+      .days {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        gap: 3px;
+        margin-top: 5px;
+        padding-right: 6px;
+      }
+      .days div {
+        text-align: center;
+        font-size: 9px;
+        line-height: 1.2;
+        color: var(--orca-muted-foreground, #888);
+        overflow: hidden;
+        white-space: nowrap;
+      }
+
+      /* ---------- legend (series toggles) ---------- */
+      .legend {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+        font-size: 11px;
+      }
+      .lg {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 9px;
+        border-radius: 999px;
+        border: 1px solid var(--orca-border, #48484e);
+        background: transparent;
+        color: var(--orca-muted-foreground, #aaa);
+        font-size: 11px;
+        cursor: pointer;
+        transition: opacity 120ms, color 120ms;
+      }
+      .lg:hover { color: var(--orca-foreground, #eee); }
+      .lg[aria-pressed="false"] { opacity: 0.45; }
+      .lg[aria-pressed="false"] i { background: var(--orca-muted-foreground, #666); }
+      .lg:focus-visible {
+        outline: 2px solid var(--orca-primary, #2563eb);
+        outline-offset: 1px;
+      }
+      .lg i {
+        width: 9px;
+        height: 9px;
+        border-radius: 2.5px;
+        display: inline-block;
+      }
+      .lg-all { border-style: dashed; }
+
+      /* ---------- table ---------- */
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--orca-border, #3d3d42);
+        border-radius: var(--radius);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11.5px;
+      }
+      th, td {
+        text-align: right;
+        padding: 5px 8px;
+        border-bottom: 1px solid var(--orca-border, #333338);
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      tr:last-child td { border-bottom: none; }
+      thead th {
+        position: sticky;
+        top: 0;
+        color: var(--orca-muted-foreground, #999);
+        font-weight: 550;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: var(--orca-card, #232327);
+      }
+      th:first-child, td:first-child {
+        text-align: left;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+      }
+      tbody tr:hover td { background: rgba(128, 128, 128, 0.08); }
+      .cell-accent {
+        color: var(--orca-primary, #60a5fa);
+        font-weight: 600;
+      }
+
+      /* ---------- skeleton / empty / error ---------- */
+      .skeleton {
+        display: grid;
+        gap: 10px;
+        padding: 4px 0;
+      }
+      .skeleton > div {
+        height: 12px;
+        border-radius: 6px;
+        background: linear-gradient(
+          90deg,
+          rgba(128, 128, 128, 0.12) 25%,
+          rgba(128, 128, 128, 0.22) 50%,
+          rgba(128, 128, 128, 0.12) 75%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.4s ease-in-out infinite;
+      }
+      .skeleton > div:nth-child(2) { width: 80%; }
+      .skeleton > div:nth-child(3) { width: 65%; }
+      @keyframes shimmer {
+        from { background-position: 200% 0; }
+        to { background-position: -200% 0; }
+      }
+      .empty, .error {
+        padding: 26px 16px;
+        text-align: center;
+        color: var(--orca-muted-foreground, #999);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .error { color: var(--orca-destructive, #f87171); }
+
+      /* ---------- footer ---------- */
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 12px;
+        font-size: 11px;
+        color: var(--orca-muted-foreground, #999);
+        font-variant-numeric: tabular-nums;
+      }
+      .spin {
+        width: 11px;
+        height: 11px;
+        border: 1.5px solid var(--orca-muted-foreground, #888);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.9s linear infinite;
+        flex: none;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      @media (prefers-reduced-motion: reduce) {
+        .skeleton > div { animation: none; }
+        .bar { transition: none; }
+        .spin { animation: none; border-top-color: var(--orca-muted-foreground); }
+      }
+
+      /* ---------- responsive ---------- */
+      /* Wide sidebars / windows: 4 KPI columns, roomier table columns. */
+      @media (min-width: 620px) {
+        .stats { grid-template-columns: repeat(4, 1fr); }
+        .chart { height: 150px; }
+        th:first-child, td:first-child { max-width: 260px; }
+      }
+      /* Very narrow: condense KPI text, tighten paddings, thin chart. */
+      @media (max-width: 380px) {
+        body { padding: 10px; }
+        .stat .v { font-size: 14px; }
+        .chart { height: 96px; gap: 2px; }
+        .chart-grid { grid-template-columns: 28px 1fr; }
+        .toolbar { flex-wrap: wrap; }
+      }
+
+      /* ---------- tooltip ---------- */
+      .tip {
+        position: fixed;
+        z-index: 10;
+        pointer-events: none;
+        padding: 8px 10px;
+        border: 1px solid var(--orca-border, #555);
+        border-radius: var(--radius);
+        background: var(--orca-popover, #2c2c31);
+        color: var(--orca-popover-foreground, #eee);
+        font-size: 11px;
+        line-height: 1.5;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+        max-width: 230px;
+        opacity: 0;
+        transform: translateY(3px);
+        transition: opacity 90ms, transform 90ms;
+      }
+      .tip.show { opacity: 1; transform: translateY(0); }
+      .tip .tip-day {
+        font-weight: 650;
+        margin-bottom: 4px;
+        font-variant-numeric: tabular-nums;
+      }
+      .tip .tip-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        color: var(--orca-muted-foreground, #bbb);
+      }
+      .tip .tip-row b {
+        color: var(--orca-popover-foreground, #fff);
+        font-weight: 550;
+        font-variant-numeric: tabular-nums;
+      }
+      .tip .tip-total {
+        margin-top: 4px;
+        padding-top: 4px;
+        border-top: 1px solid var(--orca-border, #555);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="head">
+      <h1>OMP Usage</h1>
+      <span class="status" id="live-badge" hidden><span class="spin"></span>scanning…</span>
+    </div>
+    <p class="subtitle">
+      Local omp corpus <code>~/.omp/agent/sessions</code> · corpus-wide, not per-worktree ·
+      costs precomputed by omp
+    </p>
+
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Time window">
+        <button data-days="7" aria-pressed="false">7d</button>
+        <button data-days="14" aria-pressed="false">14d</button>
+        <button data-days="30" aria-pressed="true">30d</button>
+      </div>
+      <button id="refresh" title="Rescan the local corpus">↻ Refresh</button>
+    </div>
+
+    <div class="stats" id="stats">
+      <div class="stat"><div class="k">Window tokens</div><div class="v" id="win-tokens">—</div><div class="d" id="win-tokens-sub"></div></div>
+      <div class="stat"><div class="k">Window cost</div><div class="v" id="win-cost">—</div><div class="d" id="win-cost-sub"></div></div>
+      <div class="stat"><div class="k">Today</div><div class="v" id="today-tokens">—</div><div class="d" id="today-sub"></div></div>
+      <div class="stat"><div class="k">Daily average</div><div class="v" id="avg-tokens">—</div><div class="d" id="avg-sub"></div></div>
+    </div>
+
+    <section>
+      <h2>Daily tokens <span class="note" id="chart-note"></span></h2>
+      <div class="chart-box">
+        <div class="chart-grid">
+          <div class="y-axis" id="y-axis"></div>
+          <div class="chart" id="chart" role="img" aria-label="Stacked daily token usage chart"></div>
+        </div>
+        <div class="days" id="days"></div>
+        <div class="legend" id="legend" role="group" aria-label="Toggle chart series">
+          <button class="lg" type="button" data-series="input" aria-pressed="true"><i class="seg-input"></i> input</button>
+          <button class="lg" type="button" data-series="output" aria-pressed="true"><i class="seg-output"></i> output</button>
+          <button class="lg" type="button" data-series="cache" aria-pressed="true"><i class="seg-cache"></i> cache read</button>
+          <button class="lg" type="button" data-series="reasoning" aria-pressed="true"><i class="seg-reasoning"></i> reasoning</button>
+          <button class="lg lg-all" type="button" id="show-all" hidden>show all</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>By model <span class="note">all time · <span id="model-note"></span></span></h2>
+      <div class="table-wrap">
+        <table id="models">
+          <thead>
+            <tr>
+              <th>Model</th><th>In</th><th>Out</th><th>Cache</th><th>Reasoning</th><th>Total</th><th>Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="7"><div class="skeleton"><div></div><div></div><div></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="status" id="status"></p>
+    <div class="tip" id="tip" role="tooltip"></div>
+
+    <script>
+      'use strict'
+      var currentDays = 30
+      var summaryCache = null
+      var tipEl = document.getElementById('tip')
+      var SERIES = {
+        input: 'inputTokens',
+        output: 'outputTokens',
+        cache: 'cacheReadTokens',
+        reasoning: 'reasoningTokens'
+      }
+      var seriesOn = { input: true, output: true, cache: true, reasoning: true }
+      var DAY_LABEL_LOCALE = 'en'
+
+      function tokenCount(n) {
+        if (!Number.isFinite(n)) return '—'
+        if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T'
+        if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B'
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'
+        if (n >= 1e4) return Math.round(n / 1e3) + 'k'
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k'
+        return String(n)
+      }
+      function money(n) {
+        if (!Number.isFinite(n)) return '—'
+        if (n === 0) return '$0'
+        if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'k'
+        if (n >= 100) return '$' + Math.round(n)
+        if (n >= 1) return '$' + n.toFixed(2)
+        if (n >= 0.01) return '$' + n.toFixed(2)
+        return '$' + n.toFixed(4)
+      }
+      function localDayOf(date) {
+        return (
+          date.getFullYear() + '-' +
+          String(date.getMonth() + 1).padStart(2, '0') + '-' +
+          String(date.getDate()).padStart(2, '0')
+        )
+      }
+      function labelFor(day) {
+        var parts = day.split('-')
+        return new Intl.DateTimeFormat(DAY_LABEL_LOCALE, { month: 'short', day: 'numeric' }).format(
+          new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+        )
+      }
+      function weekdayLabel(day) {
+        var parts = day.split('-')
+        return new Intl.DateTimeFormat(DAY_LABEL_LOCALE, { weekday: 'short' }).format(
+          new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
+        )
+      }
+
+      // ---------- tooltip ----------
+      function showTip(x, y, html) {
+        tipEl.innerHTML = html
+        tipEl.classList.add('show')
+        var rect = tipEl.getBoundingClientRect()
+        var left = Math.min(Math.max(4, x - rect.width / 2), window.innerWidth - rect.width - 4)
+        var top = y - rect.height - 10
+        if (top < 4) top = y + 14
+        tipEl.style.left = left + 'px'
+        tipEl.style.top = top + 'px'
+      }
+      function hideTip() {
+        tipEl.classList.remove('show')
+      }
+      function bindTip(el, htmlFn) {
+        el.addEventListener('mouseenter', function (e) { showTip(e.clientX, e.clientY, htmlFn()) })
+        el.addEventListener('mousemove', function (e) { showTip(e.clientX, e.clientY, htmlFn()) })
+        el.addEventListener('mouseleave', hideTip)
+        el.addEventListener('focus', function (e) {
+          var r = e.target.getBoundingClientRect()
+          showTip(r.left + r.width / 2, r.top, htmlFn())
+        })
+        el.addEventListener('blur', hideTip)
+      }
+      function tipRow(name, value) {
+        return (
+          value > 0
+            ? '<div class="tip-row"><span>' + name + '</span><b>' + value.toLocaleString() + '</b></div>'
+            : ''
+        )
+      }
+      function tipHtml(d) {
+        return (
+          '<div class="tip-day">' + labelFor(d.day) + ' · ' + weekdayLabel(d.day) + '</div>' +
+          tipRow('input', d.inputTokens) +
+          tipRow('output', d.outputTokens) +
+          tipRow('cache read', d.cacheReadTokens) +
+          tipRow('reasoning', d.reasoningTokens) +
+          '<div class="tip-row tip-total"><span>total</span><b>' +
+          d.totalTokens.toLocaleString() + ' · ' + money(d.costUsd) + '</b></div>'
+        )
+      }
+
+      // ---------- renderers ----------
+      function niceMax(max) {
+        if (max <= 0) return 1
+        var pow = Math.pow(10, Math.floor(Math.log(max) / Math.LN10))
+        var unit = max / pow
+        var nice = unit <= 1 ? 1 : unit <= 2 ? 2 : unit <= 2.5 ? 2.5 : unit <= 5 ? 5 : 10
+        return nice * pow
+      }
+
+      function renderChart(daily) {
+        var chartEl = document.getElementById('chart')
+        var yAxisEl = document.getElementById('y-axis')
+        var daysEl = document.getElementById('days')
+        var noteEl = document.getElementById('chart-note')
+        chartEl.replaceChildren()
+        daysEl.replaceChildren()
+        yAxisEl.replaceChildren()
+
+        if (daily.length === 0) {
+          noteEl.textContent = ''
+          chartEl.innerHTML = '<div class="empty">No usage in this window.</div>'
+          return
+        }
+        noteEl.textContent = daily.length + (daily.length === 1 ? ' day' : ' days') + ' with data'
+
+        function visibleTotal(d) {
+          return (
+            (seriesOn.input ? d.inputTokens : 0) +
+            (seriesOn.output ? d.outputTokens : 0) +
+            (seriesOn.cache ? d.cacheReadTokens : 0) +
+            (seriesOn.reasoning ? d.reasoningTokens : 0)
+          )
+        }
+
+        var maxRaw = Math.max.apply(null, daily.map(visibleTotal))
+        var max = niceMax(maxRaw)
+
+        for (var g = 0; g <= 3; g++) {
+          var line = document.createElement('div')
+          line.className = 'gridline'
+          line.style.bottom = (g * 25) + '%'
+          chartEl.appendChild(line)
+        }
+        for (var y = 3; y >= 0; y--) {
+          var tick = document.createElement('div')
+          tick.textContent = tokenCount((max * y) / 3)
+          yAxisEl.appendChild(tick)
+        }
+
+        var labelStep = Math.max(1, Math.ceil(daily.length / 7))
+        daily.forEach(function (d, index) {
+          var bar = document.createElement('button')
+          bar.type = 'button'
+          var shownTotal = visibleTotal(d)
+          bar.className = 'bar' + (shownTotal === 0 ? ' empty-bar' : '')
+          bar.dataset.day = d.day
+          if (shownTotal > 0) {
+            bar.setAttribute('aria-label', labelFor(d.day) + ': ' + tokenCount(shownTotal) + ' tokens, ' + money(d.costUsd))
+            function seg(cls, value) {
+              if (value <= 0) return
+              var s = document.createElement('span')
+              s.className = cls
+              s.style.height = ((value / max) * 100).toFixed(3) + '%'
+              bar.appendChild(s)
+            }
+            if (seriesOn.input) seg('seg-input', d.inputTokens)
+            if (seriesOn.output) seg('seg-output', d.outputTokens)
+            if (seriesOn.cache) seg('seg-cache', d.cacheReadTokens)
+            if (seriesOn.reasoning) seg('seg-reasoning', d.reasoningTokens)
+            bindTip(bar, function () { return tipHtml(d) })
+          } else {
+            bar.setAttribute('aria-label', labelFor(d.day) + ': no usage')
+          }
+          chartEl.appendChild(bar)
+
+          var dayLabel = document.createElement('div')
+          dayLabel.textContent =
+            index % labelStep === 0 || index === daily.length - 1 ? labelFor(d.day) : ' '
+          daysEl.appendChild(dayLabel)
+        })
+      }
+
+      function renderStats(summary) {
+        var daily = summary.daily
+        var winTokens = daily.reduce(function (a, d) { return a + d.totalTokens }, 0)
+        var winCost = daily.reduce(function (a, d) { return a + d.costUsd }, 0)
+        var daysWith = daily.filter(function (d) { return d.totalTokens > 0 }).length
+        var today = localDayOf(new Date())
+        var todayRow = daily.filter(function (d) { return d.day === today })[0]
+        var avg = daysWith > 0 ? winTokens / daysWith : 0
+
+        document.getElementById('win-tokens').textContent = tokenCount(winTokens)
+        document.getElementById('win-tokens-sub').textContent =
+          summary.days + '-day window · ' + daysWith + ' active days'
+        document.getElementById('win-cost').textContent = money(winCost)
+        document.getElementById('win-cost-sub').textContent =
+          'across ' + summary.sessionCount + ' sessions'
+        document.getElementById('today-tokens').textContent = todayRow ? tokenCount(todayRow.totalTokens) : '0'
+        document.getElementById('today-sub').textContent = todayRow ? money(todayRow.costUsd) : 'no usage yet'
+        document.getElementById('avg-tokens').textContent = tokenCount(avg)
+        document.getElementById('avg-sub').textContent =
+          'avg cost ' + money(daysWith > 0 ? winCost / daysWith : 0) + '/active day'
+      }
+
+      function renderModels(models, sessionTotal) {
+        var tbody = document.querySelector('#models tbody')
+        var note = document.getElementById('model-note')
+        tbody.replaceChildren()
+        if (models.length === 0) {
+          note.textContent = ''
+          var emptyTr = document.createElement('tr')
+          var emptyTd = document.createElement('td')
+          emptyTd.colSpan = 7
+          emptyTd.innerHTML = '<div class="empty">No models recorded.</div>'
+          emptyTr.appendChild(emptyTd)
+          tbody.appendChild(emptyTr)
+          return
+        }
+        note.textContent = sessionTotal + ' sessions · top ' + Math.min(12, models.length)
+        models
+          .slice()
+          .sort(function (a, b) { return b.totalTokens - a.totalTokens })
+          .slice(0, 12)
+          .forEach(function (m, i) {
+            var tr = document.createElement('tr')
+            tr.title = m.model + '\nsessions: ' + m.sessions
+            function cell(text, cls) {
+              var td = document.createElement('td')
+              td.textContent = text
+              if (cls) td.className = cls
+              tr.appendChild(td)
+            }
+            cell(m.model)
+            cell(tokenCount(m.inputTokens))
+            cell(tokenCount(m.outputTokens))
+            cell(tokenCount(m.cacheReadTokens + m.cacheWriteTokens))
+            cell(tokenCount(m.reasoningTokens))
+            cell(tokenCount(m.totalTokens), i === 0 ? 'cell-accent' : undefined)
+            cell(money(m.costUsd), i === 0 ? 'cell-accent' : undefined)
+            tbody.appendChild(tr)
+          })
+      }
+
+      function renderAll(summary) {
+        renderStats(summary)
+        renderChart(summary.daily)
+        renderModels(summary.byModel, summary.sessionCount)
+        document.getElementById('status').textContent =
+          'updated ' + new Date(summary.scannedAt).toLocaleTimeString()
+      }
+
+      function showScanProgress(progress) {
+        var badge = document.getElementById('live-badge')
+        if (!progress || progress.scanned >= progress.total) {
+          badge.hidden = true
+          return
+        }
+        badge.hidden = false
+        badge.textContent = ''
+        badge.appendChild(document.createTextNode(
+          'scanning ' + progress.scanned + '/' + progress.total
+        ))
+        var spinner = document.createElement('span')
+        spinner.className = 'spin'
+        badge.prepend(spinner)
+      }
+
+      async function load(retries) {
+        var statusEl = document.getElementById('status')
+        var attempt = retries === undefined ? 3 : retries
+        try {
+          var summary = await orca.plugin.request('usage.summary', { days: currentDays })
+          summaryCache = summary
+          renderAll(summary)
+          showScanProgress(summary.scanning)
+        } catch (error) {
+          if (attempt > 0) {
+            // the worker may be restarting (dev reload); back off and retry
+            await new Promise(function (r) { setTimeout(r, 800) })
+            return load(attempt - 1)
+          }
+          var tbody = document.querySelector('#models tbody')
+          tbody.innerHTML =
+            '<tr><td colspan="7"><div class="error">Could not load usage: ' +
+            String((error && error.message) || error).replace(/[<>&]/g, '') +
+            '</div></td></tr>'
+          statusEl.textContent = ''
+        }
+      }
+
+      Array.prototype.forEach.call(document.querySelectorAll('[data-days]'), function (b) {
+        b.addEventListener('click', function () {
+          Array.prototype.forEach.call(document.querySelectorAll('[data-days]'), function (x) {
+            x.setAttribute('aria-pressed', String(x === b))
+          })
+          currentDays = Number(b.dataset.days)
+          load()
+        })
+      })
+
+      // Series toggles: hide a series and rescale the chart to what remains.
+      Array.prototype.forEach.call(document.querySelectorAll('#legend .lg[data-series]'), function (b) {
+        b.addEventListener('click', function () {
+          var key = b.dataset.series
+          seriesOn[key] = !seriesOn[key]
+          b.setAttribute('aria-pressed', String(seriesOn[key]))
+          var anyOff = Object.keys(seriesOn).some(function (k) { return !seriesOn[k] })
+          document.getElementById('show-all').hidden = !anyOff
+          if (summaryCache) renderChart(summaryCache.daily)
+        })
+      })
+      document.getElementById('show-all').addEventListener('click', function () {
+        Object.keys(seriesOn).forEach(function (k) { seriesOn[k] = true })
+        Array.prototype.forEach.call(document.querySelectorAll('#legend .lg[data-series]'), function (b) {
+          b.setAttribute('aria-pressed', 'true')
+        })
+        this.hidden = true
+        if (summaryCache) renderChart(summaryCache.daily)
+      })
+
+      document.getElementById('refresh').addEventListener('click', async function () {
+        this.disabled = true
+        try {
+          await orca.plugin.request('usage.refresh')
+          await load()
+        } finally {
+          this.disabled = false
+        }
+      })
+
+      // worker pushes scan progress while a rescan runs
+      var lastProgressAt = 0
+      if (orca.plugin && orca.plugin.on) {
+        orca.plugin.on('usage.progress', function (p) {
+          lastProgressAt = Date.now()
+          showScanProgress(p)
+          if (p && p.scanned >= p.total) {
+            load()
+          }
+        })
+      }
+
+      // Self-heal: a worker restart orphans this panel's progress subscription and the
+      // badge would stay stale forever. If no push arrives for a while, ask the worker:
+      // usage.summary answers at once unless a scan is really still running.
+      setInterval(function () {
+        var badge = document.getElementById('live-badge')
+        if (badge.hidden) return
+        if (lastProgressAt && Date.now() - lastProgressAt > 4000) {
+          load()
+        }
+      }, 2500)
+
+      void load()
+    </script>
+  </body>
+</html>

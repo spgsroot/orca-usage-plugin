@@ -1,0 +1,45 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stablyai/orca/main/docs/schemas/plugins/orca-plugin.v2.schema.json",
+  "manifestVersion": 2,
+  "execution": "trusted-worker",
+  "id": "omp-usage",
+  "publisher": "local",
+  "name": "OMP Usage",
+  "version": "1.0.0",
+  "description": "Token-usage dashboard for the local omp corpus: stacked daily chart with series toggles, per-model table, corpus totals, and a status-bar item with today's spend.",
+  "author": { "name": "spgsroot" },
+  "license": "MIT",
+  "engines": { "orca": ">=1.4.255" },
+  "pluginApi": 1,
+  "main": "main.mjs",
+  "contributes": {
+    "panels": [
+      {
+        "id": "usage",
+        "title": "OMP Usage",
+        "icon": "bar-chart-3",
+        "entry": "panel/index.html"
+      }
+    ],
+    "commands": [
+      {
+        "id": "omp-usage.refresh",
+        "title": "OMP Usage: Rescan local sessions",
+        "when": "global"
+      }
+    ],
+    "statusBarItems": [
+      {
+        "id": "omp-tokens",
+        "text": "…",
+        "icon": "bar-chart-3",
+        "tone": "neutral",
+        "tooltip": "OMP tokens today (local corpus)"
+      }
+    ]
+  },
+  "capabilities": [
+    { "kind": "storage:own" },
+    { "kind": "notifications:show" }
+  ]
+}
