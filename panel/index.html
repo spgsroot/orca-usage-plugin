@@ -126,7 +126,16 @@
         margin-top: 2px;
         font-variant-numeric: tabular-nums;
       }
-      .k-hint { color: var(--orca-primary, #60a5fa); font-size: 10px; }
+      .k-hint {
+        display: inline-block;
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 5px solid var(--orca-primary, #60a5fa);
+        vertical-align: middle;
+        margin-left: 3px;
+      }
       .stat.stat-click {
         cursor: pointer;
         transition: border-color 120ms;
@@ -518,7 +527,7 @@
 
     <div class="stats" id="stats">
       <div class="stat stat-click" id="today-card" role="button" tabindex="0" aria-expanded="false" title="Show today's breakdown">
-        <div class="k">Today <span class="k-hint">▾</span></div><div class="v" id="today-tokens">—</div><div class="d" id="today-sub"></div>
+        <div class="k">Today <span class="k-hint" aria-hidden="true"></span></div><div class="v" id="today-tokens">—</div><div class="d" id="today-sub"></div>
       </div>
       <div class="stat"><div class="k">Window tokens</div><div class="v" id="win-tokens">—</div><div class="d" id="win-tokens-sub"></div></div>
       <div class="stat"><div class="k">Window cost</div><div class="v" id="win-cost">—</div><div class="d" id="win-cost-sub"></div></div>
