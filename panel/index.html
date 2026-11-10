@@ -126,6 +126,62 @@
         margin-top: 2px;
         font-variant-numeric: tabular-nums;
       }
+      .stat.stat-click {
+        cursor: pointer;
+        transition: border-color 120ms;
+      }
+      .stat.stat-click:hover { border-color: var(--orca-primary, #2563eb); }
+      .stat.stat-click:focus-visible {
+        outline: 2px solid var(--orca-primary, #2563eb);
+        outline-offset: 1px;
+      }
+      .day-detail {
+        margin: 0 0 16px;
+        padding: 10px 12px;
+        border: 1px solid var(--orca-border, #3d3d42);
+        border-radius: var(--radius);
+        background: var(--orca-card, rgba(128, 128, 128, 0.07));
+        font-size: 11.5px;
+      }
+      .day-detail .dd-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .day-detail .dd-title { font-weight: 650; font-size: 12.5px; }
+      .day-detail .dd-close {
+        border: none;
+        background: transparent;
+        color: var(--orca-muted-foreground, #999);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 2px 6px;
+      }
+      .day-detail .dd-close:hover { color: var(--orca-foreground, #eee); }
+      .day-detail .dd-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+        gap: 6px 14px;
+        font-variant-numeric: tabular-nums;
+      }
+      .day-detail .dd-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .day-detail .dd-row span { color: var(--orca-muted-foreground, #999); }
+      .day-detail .dd-row b { font-weight: 550; }
+      .day-detail .dd-bar {
+        display: flex;
+        height: 10px;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 8px;
+        background: rgba(128, 128, 128, 0.15);
+      }
+      .day-detail .dd-bar span { height: 100%; min-width: 2px; }
 
       /* ---------- sections ---------- */
       h2 {
@@ -399,6 +455,8 @@
       /* ---------- tooltip ---------- */
       .tip {
         position: fixed;
+        left: 0;
+        top: 0;
         z-index: 10;
         pointer-events: none;
         padding: 8px 10px;
@@ -411,10 +469,10 @@
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
         max-width: 230px;
         opacity: 0;
-        transform: translateY(3px);
-        transition: opacity 90ms, transform 90ms;
+        transition: opacity 90ms;
+        will-change: transform;
       }
-      .tip.show { opacity: 1; transform: translateY(0); }
+      .tip.show { opacity: 1; }
       .tip .tip-day {
         font-weight: 650;
         margin-bottom: 4px;
@@ -458,11 +516,15 @@
     </div>
 
     <div class="stats" id="stats">
+      <div class="stat stat-click" id="today-card" role="button" tabindex="0" aria-expanded="false" title="Show today's breakdown">
+        <div class="k">Today</div><div class="v" id="today-tokens">—</div><div class="d" id="today-sub"></div>
+      </div>
       <div class="stat"><div class="k">Window tokens</div><div class="v" id="win-tokens">—</div><div class="d" id="win-tokens-sub"></div></div>
       <div class="stat"><div class="k">Window cost</div><div class="v" id="win-cost">—</div><div class="d" id="win-cost-sub"></div></div>
-      <div class="stat"><div class="k">Today</div><div class="v" id="today-tokens">—</div><div class="d" id="today-sub"></div></div>
       <div class="stat"><div class="k">Daily average</div><div class="v" id="avg-tokens">—</div><div class="d" id="avg-sub"></div></div>
     </div>
+
+    <div class="day-detail" id="day-detail" hidden></div>
 
     <section>
       <h2>Daily tokens <span class="note" id="chart-note"></span></h2>
@@ -554,26 +616,47 @@
       }
 
       // ---------- tooltip ----------
-      function showTip(x, y, html) {
-        tipEl.innerHTML = html
-        tipEl.classList.add('show')
+      var tipShownFor = null
+      var tipRafPending = false
+      function showTipAt(x, y) {
+        // transform avoids layout thrash; position updates never repaint the content.
         var rect = tipEl.getBoundingClientRect()
         var left = Math.min(Math.max(4, x - rect.width / 2), window.innerWidth - rect.width - 4)
         var top = y - rect.height - 10
         if (top < 4) top = y + 14
-        tipEl.style.left = left + 'px'
-        tipEl.style.top = top + 'px'
+        tipEl.style.transform = 'translate(' + left + 'px,' + top + 'px)'
+      }
+      function showTip(x, y, key, html) {
+        // Rebuild the content only when the hovered target changes, not on
+        // every mousemove: rebuilding each frame made the tooltip flicker.
+        if (tipShownFor !== key) {
+          tipShownFor = key
+          tipEl.innerHTML = html
+          tipEl.classList.add('show')
+        }
+        showTipAt(x, y)
       }
       function hideTip() {
+        tipShownFor = null
         tipEl.classList.remove('show')
       }
-      function bindTip(el, htmlFn) {
-        el.addEventListener('mouseenter', function (e) { showTip(e.clientX, e.clientY, htmlFn()) })
-        el.addEventListener('mousemove', function (e) { showTip(e.clientX, e.clientY, htmlFn()) })
+      function bindTip(el, htmlFn, keyFn) {
+        var move = function (e) {
+          var x = e.clientX
+          var y = e.clientY
+          if (tipRafPending) return
+          tipRafPending = true
+          requestAnimationFrame(function () {
+            tipRafPending = false
+            showTip(x, y, keyFn(), htmlFn())
+          })
+        }
+        el.addEventListener('mouseenter', move)
+        el.addEventListener('mousemove', move)
         el.addEventListener('mouseleave', hideTip)
         el.addEventListener('focus', function (e) {
           var r = e.target.getBoundingClientRect()
-          showTip(r.left + r.width / 2, r.top, htmlFn())
+          showTip(r.left + r.width / 2, r.top, keyFn(), htmlFn())
         })
         el.addEventListener('blur', hideTip)
       }
@@ -665,7 +748,7 @@
             if (seriesOn.output) seg('seg-output', d.outputTokens)
             if (seriesOn.cache) seg('seg-cache', d.cacheReadTokens)
             if (seriesOn.reasoning) seg('seg-reasoning', d.reasoningTokens)
-            bindTip(bar, function () { return tipHtml(d) })
+            bindTip(bar, function () { return tipHtml(d) }, function () { return d.day })
           } else {
             bar.setAttribute('aria-label', labelFor(d.day) + ': no usage')
           }
@@ -699,6 +782,74 @@
         document.getElementById('avg-sub').textContent =
           'avg cost ' + money(daysWith > 0 ? winCost / daysWith : 0) + '/active day'
       }
+
+      var dayDetailDay = null
+
+      function renderDayDetail(summary) {
+        var box = document.getElementById('day-detail')
+        if (dayDetailDay === null) {
+          box.hidden = true
+          document.getElementById('today-card').setAttribute('aria-expanded', 'false')
+          return
+        }
+        var row = summary.daily.filter(function (d) { return d.day === dayDetailDay })[0]
+        if (!row) {
+          box.hidden = true
+          return
+        }
+        box.hidden = false
+        document.getElementById('today-card').setAttribute('aria-expanded', String(dayDetailDay === localDayOf(new Date())))
+
+        var total = row.totalTokens || 1
+        function pct(v) {
+          return ((v / total) * 100).toFixed(1) + '%'
+        }
+        function row2(label, value) {
+          return '<div class="dd-row"><span>' + label + '</span><b>' + tokenCount(value) + ' · ' + pct(value) + '</b></div>'
+        }
+        var share = summary.daily.reduce(function (a, d) { return a + d.totalTokens }, 0)
+        box.innerHTML =
+          '<div class="dd-head"><span class="dd-title">' + labelFor(row.day) + ' · ' + weekdayLabel(row.day) +
+          (row.day === localDayOf(new Date()) ? ' (today)' : '') +
+          '</span><button class="dd-close" type="button" aria-label="Close day detail">✕</button></div>' +
+          '<div class="dd-grid">' +
+          row2('input', row.inputTokens) +
+          row2('output', row.outputTokens) +
+          row2('cache read', row.cacheReadTokens) +
+          row2('reasoning', row.reasoningTokens) +
+          '</div>' +
+          '<div class="dd-bar">' +
+          (row.inputTokens > 0 ? '<span class="seg-input" style="flex:' + row.inputTokens + '"></span>' : '') +
+          (row.outputTokens > 0 ? '<span class="seg-output" style="flex:' + row.outputTokens + '"></span>' : '') +
+          (row.cacheReadTokens > 0 ? '<span class="seg-cache" style="flex:' + row.cacheReadTokens + '"></span>' : '') +
+          (row.reasoningTokens > 0 ? '<span class="seg-reasoning" style="flex:' + row.reasoningTokens + '"></span>' : '') +
+          '</div>' +
+          '<div class="dd-row" style="margin-top:6px"><span>total</span><b>' +
+          row.totalTokens.toLocaleString() + ' · ' + money(row.costUsd) + '</b></div>' +
+          (share > 0 ? '<div class="dd-row"><span>share of ' + summary.days + 'd window</span><b>' +
+            ((row.totalTokens / share) * 100).toFixed(1) + '%</b></div>' : '')
+
+        box.querySelector('.dd-close').addEventListener('click', function () {
+          dayDetailDay = null
+          renderDayDetail(summary)
+        })
+      }
+
+      function bindTodayCard() {
+        var card = document.getElementById('today-card')
+        function toggle() {
+          dayDetailDay = dayDetailDay === null ? localDayOf(new Date()) : null
+          if (summaryCache) renderDayDetail(summaryCache)
+        }
+        card.addEventListener('click', toggle)
+        card.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            toggle()
+          }
+        })
+      }
+      bindTodayCard()
 
       function renderModels(models, sessionTotal) {
         var tbody = document.querySelector('#models tbody')
@@ -753,6 +904,7 @@
 
       function renderAll(summary) {
         renderStats(summary)
+        renderDayDetail(summary)
         renderChart(summary.daily)
         renderModels(summary.byModel, summary.sessionCount)
         document.getElementById('status').textContent =

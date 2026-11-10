@@ -1,0 +1,65 @@
+# eng-gates project config. PROTECTED: agents must not edit this file (guard.config fails if they do).
+# Runner: python3 tools/eng-gates/gate.py {fast|full|doctor}
+
+[gate]
+base = "origin/main"          # "changed" means changed since merge-base with this ref
+timeout = 900                 # seconds per check
+strict = false                # true (or CI=1): a missing tool fails instead of skipping
+# languages = ["rust", "python", "ts"]   # override auto-detection
+ts_src = "src"                # what dependency-cruiser scans
+# extra protected paths (beyond the built-in list):
+protected = []
+# paths where new suppressions are not reported (generated code, vendored code):
+suppress_ignore = ["**/generated/**", "**/*_pb2.py", "**/*.gen.ts"]
+
+[ub]                          # Uncle Bob's gates (ub-mode)
+crap = 10                     # every changed function: CRAP below this
+dry = 0.8                     # duplicate candidates at or above this similarity fail
+
+[tools]
+# ub_dir = "~/.local/share/eng-gates/ub"   # where crapper/, dryer/, mutator/ live
+# pyright = ".venv/bin/pyright"            # pin any tool to a path
+
+# ---- per-check overrides: enabled / tier / cmd / requires ----
+# Ids: rust.fmt rust.clippy rust.test rust.deny rust.machete rust.semver rust.bench
+#      py.format py.lint py.types py.test py.imports py.deps py.bench
+#      ts.types ts.lint ts.test ts.deps ts.knip ts.size ts.bench
+#      ub.crap ub.dry ub.mutate guard.config guard.suppress
+
+# Published Rust library: catch breaking API changes.
+# [check."rust.semver"]
+# enabled = true
+
+# Rust benchmarks. gungraun counts instructions (deterministic, Linux + Valgrind);
+# put regression limits in the bench code so `cargo bench` itself fails.
+# [check."rust.bench"]
+# enabled = true
+# cmd = "cargo bench --bench hot_paths"
+
+# Python benchmarks: save a baseline once (pytest --benchmark-save=base), then compare.
+# [check."py.bench"]
+# enabled = true
+# cmd = "pytest benches --benchmark-only --benchmark-compare=0001 --benchmark-compare-fail=mean:5%"
+
+# JS/TS benchmarks: benches/run.mjs writes {name: hz} JSON, bench_compare checks the budget.
+# [check."ts.bench"]
+# enabled = true
+# tool = "node"
+# cmd = "node benches/run.mjs target/bench/current.json"
+# [check."ts.bench-compare"]
+# tier = "full"
+# lang = "ts"
+# tool = "python3"
+# cmd = "python3 tools/eng-gates/bench_compare.py benches/baselines/ts.json target/bench/current.json --higher-is-better --max-regression 5"
+
+# Python projects on mypy instead of pyright:
+# [check."py.types"]
+# tool = "mypy"
+# cmd = "mypy --strict src"
+
+# LLMOps: serving latency on a dedicated box (not on every change).
+# [check."llm.latency"]
+# tier = "full"
+# enabled = false
+# tool = "python3"
+# cmd = "python3 scripts/serving_gate.py --p95-ttft-ms 400 --min-tokens-per-s 1500"
