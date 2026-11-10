@@ -1,3 +1,2 @@
-.gates/last.json
-.gates/approved.json
-.metrics/
+node_modules/
+.gates/
