@@ -136,6 +136,11 @@
         vertical-align: middle;
         margin-left: 3px;
       }
+      #today-card[aria-expanded="true"] .k-hint {
+        border-top-color: transparent;
+        border-bottom: 5px solid var(--orca-primary, #60a5fa);
+        transform: translateY(-2px);
+      }
       .stat.stat-click {
         cursor: pointer;
         transition: border-color 120ms;
@@ -810,10 +815,12 @@
         var row = summary.daily.filter(function (d) { return d.day === dayDetailDay })[0]
         if (!row) {
           box.hidden = true
+          document.getElementById('today-card').setAttribute('aria-expanded', 'false')
           return
         }
         box.hidden = false
-        document.getElementById('today-card').setAttribute('aria-expanded', String(dayDetailDay === localDayOf(new Date())))
+        // The chevron flips while the detail card is open (any day).
+        document.getElementById('today-card').setAttribute('aria-expanded', 'true')
 
         var total = row.totalTokens || 1
         function pct(v) {
