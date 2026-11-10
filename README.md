@@ -65,13 +65,15 @@ separate from output. The panel says so explicitly.
 Requires Orca >= 1.4.255 (desktop app).
 
 ```sh
+orca plugin install https://github.com/spgsroot/orca-usage-plugin
+# or while developing:
 orca plugin dev load /path/to/orca-usage-plugin
 # approval_required → re-run with --approve <fingerprint> from the output
 ```
 
-Or list it in a catalog / install from a Git repository whose owner matches the
-publisher you want. The plugin is fully self-contained: `node:*` imports only,
-no build step, no other plugin, no network access.
+Installs as `spgsroot.omp-usage` (the publisher is derived from the repository
+owner). The plugin is fully self-contained: `node:*` imports only, no build
+step, no other plugin, no network access.
 
 ## Capabilities
 
