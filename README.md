@@ -4,8 +4,8 @@ A token-usage dashboard for the local [omp](https://omp.sh) CLI corpus — the p
 form of the omp usage provider from
 [stablyai/orca PR #36454](https://github.com/stablyai/orca/pull/36454).
 
-![OMP Usage panel](docs/panel-dark.png)
-![Status bar item](docs/statusbar-dark.png)
+![OMP Usage panel](docs/panel-main.png)
+![Day breakdown and chart tooltip](docs/panel-day-detail.png)
 
 ## What it does
 

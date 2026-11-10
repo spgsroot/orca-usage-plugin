@@ -4,7 +4,7 @@
   "execution": "trusted-worker",
   "id": "omp-usage",
   "name": "OMP Usage",
-  "version": "1.1.3",
+  "version": "1.2.0",
   "description": "Token-usage dashboard for the local omp corpus: stacked daily chart with series toggles, per-model table, corpus totals, and a status-bar item with today's spend.",
   "author": {
     "name": "spgsroot"
@@ -47,6 +47,22 @@
     },
     {
       "kind": "notifications:show"
+    }
+  ],
+  "cover": {
+    "path": "docs/cover.png",
+    "alt": "The OMP Usage dashboard: KPI cards for window tokens, cost, today and daily average; a stacked daily chart with a hover tooltip; and the per-model table."
+  },
+  "screenshots": [
+    {
+      "path": "docs/panel-main.png",
+      "alt": "The OMP Usage panel: KPI cards, the stacked daily chart with series toggles, and the per-model table with costs.",
+      "caption": "The panel with a 30-day window"
+    },
+    {
+      "path": "docs/panel-day-detail.png",
+      "alt": "Day breakdown card with per-series percentages and a chart tooltip; the Today chevron points up while the detail is open.",
+      "caption": "Day breakdown and chart tooltip"
     }
   ]
 }
