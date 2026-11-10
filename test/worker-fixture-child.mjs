@@ -110,6 +110,19 @@ const summary = (days) => handlers.get('usage.summary')({ days: 90 })
   assert.equal(totals.inputTokens, 100 + 200 + 1000 + 10)
   assert.ok(totals.costUsd >= 0.0084 && totals.costUsd < 0.00841, 'totals sum all costs')
   console.log('✓ 1. cloud/local/deep aggregation exact (costs, reasoning, cacheWrite, rebuilt totals)')
+
+  // Today's breakdown (the day-detail card contract): the s3 fixture writes
+  // today's only usage, so today's row must carry exactly those numbers.
+  const todayKey = dayAt(0, '00:00:00.000Z').slice(0, 10)
+  const today = r.daily.find((d) => d.day === todayKey)
+  assert.ok(today, 'today row present')
+  assert.equal(today.inputTokens, 10)
+  assert.equal(today.outputTokens, 5)
+  assert.equal(today.cacheReadTokens, 0)
+  assert.equal(today.reasoningTokens, 2)
+  assert.equal(today.totalTokens, 15)
+  assert.ok(Math.abs(today.costUsd - 0.0001) < 1e-9, 'today cost exact')
+  console.log('✓ 1b. today breakdown exact (per-series values, total, cost)')
 }
 
 // ---------------- test 2: checkpoint skip ----------------
